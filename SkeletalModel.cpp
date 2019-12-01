@@ -1,6 +1,7 @@
 #include "SkeletalModel.h"
 
 #include <FL/Fl.H>
+#include <fstream> // header providing file stream classes
 
 using namespace std;
 
@@ -40,9 +41,69 @@ void SkeletalModel::draw(Matrix4f cameraMatrix, bool skeletonVisible)
 	}
 }
 
+// 1.1. Implement method to load a skeleton.
+// This method computes m_rootJoint and populate m_joints.
 void SkeletalModel::loadSkeleton( const char* filename )
 {
 	// Load the skeleton from file here.
+	cerr << "provided filename:" << endl;
+	cerr << filename << endl;
+	std::ifstream input_row(filename);
+
+	// translation vector data relative to parent:
+	float x, y, z;
+	int parentID;
+
+	int joint_index = 0;
+	while (input_row >> x >> y >> z >> parentID)
+	{
+		cerr << x << " " << y << " " << z << " " << parentID << endl;
+		Joint* joint = new Joint;
+
+		if(joint_index == 0)
+		{
+			m_rootJoint = joint;
+		}
+
+		Matrix4f tranlation_wrt_parent(1); // translation matrix with respect to parent node
+		tranlation_wrt_parent = tranlation_wrt_parent.translation(x, y, z);
+
+		joint->transform = tranlation_wrt_parent;
+		joint->index = joint_index;
+		if(parentID != -1)
+			m_joints[parentID]->children.push_back(joint);
+
+		m_joints.push_back(joint);
+		joint_index++;
+	}
+
+	for (int i = 0; i < m_joints.size(); i++)
+	{
+		cerr << "Children of joint index: " << i << endl;
+		for( int j = 0; j < m_joints[i]->children.size(); j++)
+		{
+			cerr << m_joints[i]->children[j]->index << " ";
+		}
+		cerr << endl;
+	}
+
+
+}
+
+void SkeletalModel::getChild( Joint* joint )
+{
+	// recursion ending condition:
+	if (joint->children.size() == 0)
+	{
+		// if the passed joint does not have any child joints,
+		// ... then simply draw it
+		cerr << joint->index << " ";
+		// left here on 2019-12-01
+	}
+	else
+	{
+		cerr << "keep on looking . . ." << endl;
+	}
 }
 
 void SkeletalModel::drawJoints( )
@@ -57,6 +118,11 @@ void SkeletalModel::drawJoints( )
 	// (glPushMatrix, glPopMatrix, glMultMatrix).
 	// You should use your MatrixStack class
 	// and use glLoadMatrix() before your drawing call.
+
+	// since our Joint Hierarchical Structure is a DAG (directed acyclic graph),
+	// ... it has one root node with 0 parents (since it is acyclic)
+	// We start the recursive helper function from the root:
+	this->getChild(m_joints[0]);
 }
 
 void SkeletalModel::drawSkeleton( )

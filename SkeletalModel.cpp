@@ -20,7 +20,7 @@ void SkeletalModel::draw(Matrix4f cameraMatrix, bool skeletonVisible)
 {
 	// draw() gets called whenever a redraw is required
 	// (after an update() occurs, when the camera moves, the window is resized, etc)
-
+	cerr << "initializes here? camera \n";
 	m_matrixStack.clear();
 	// push camera as first thing on the stack:
 	m_matrixStack.push(cameraMatrix);
@@ -69,7 +69,8 @@ void SkeletalModel::loadSkeleton( const char* filename )
 		tranlation_wrt_parent = tranlation_wrt_parent.translation(x, y, z);
 
 		joint->transform = tranlation_wrt_parent;
-		joint->index = joint_index;
+		joint->index = joint_index; // enumerate the joints
+
 		if(parentID != -1)
 			m_joints[parentID]->children.push_back(joint);
 
@@ -97,12 +98,52 @@ void SkeletalModel::getChild( Joint* joint )
 	{
 		// if the passed joint does not have any child joints,
 		// ... then simply draw it
-		cerr << joint->index << " ";
-		// left here on 2019-12-01
+		cerr << "Drawing joint index: " << joint->index << " ";
+
+		m_matrixStack.push(joint->transform);
+
+		Matrix4f top_transformation = m_matrixStack.top();
+		top_transformation.print();
+		// float m[16] = {1,0,0,0,0,1,0,0,0,0,1,0,1,2,3,1};
+		glLoadMatrixf(top_transformation);
+		// glGetFloatv (GL_MODELVIEW_MATRIX, check_mat);
+
+		// GLUQuadric *sphere;
+		GLUquadricObj *sphere;
+		sphere = gluNewQuadric();
+		gluQuadricDrawStyle(sphere, GLU_FILL );
+		gluSphere( sphere, 0.025f, 12, 12 );
+
+		// glutSolidSphere( 0.025f, 12, 12 );
+		// m_matrixStack.pop();
+		// left here on 2019-12-01, ... continuing on 2019-12-18
 	}
 	else
 	{
 		cerr << "keep on looking . . ." << endl;
+		cerr << joint->index << " has children: " << joint->children.size() << endl;
+		// m_matrixStack.push(joint->transform);
+		// Matrix4f top_transformation = m_matrixStack.top();
+		// top_transformation.print();
+		m_matrixStack.push(joint->transform);
+
+		for(int child = 0; child < joint->children.size(); child++ )
+		{
+			this->getChild(joint->children[child]);
+			cerr << "EXITING RECURSION . . . popping and drawing index: " << joint->index << std::endl;
+
+			Matrix4f top_transformation = m_matrixStack.top();
+			top_transformation.print();
+
+			glLoadMatrixf(top_transformation);
+
+			GLUquadricObj *sphere;
+			sphere = gluNewQuadric();
+			gluQuadricDrawStyle(sphere, GLU_FILL );
+			gluSphere( sphere, 0.025f, 12, 12 );
+
+			m_matrixStack.pop();
+		}
 	}
 }
 
@@ -122,7 +163,38 @@ void SkeletalModel::drawJoints( )
 	// since our Joint Hierarchical Structure is a DAG (directed acyclic graph),
 	// ... it has one root node with 0 parents (since it is acyclic)
 	// We start the recursive helper function from the root:
-	this->getChild(m_joints[0]);
+	// add the root transformation
+	m_matrixStack.push(m_joints[0]->transform);
+	Matrix4f top_transformation = m_matrixStack.top();
+	top_transformation.print();
+
+	glLoadMatrixf(top_transformation);
+
+	cerr << "TOP Level children: " << m_joints[0]->children.size() << std::endl;
+
+	for (int child = 0; child < m_joints[0]->children.size(); child++ )
+	// for (int child = 0; child < 1; child++ )
+	{
+		// if (child != 0)
+		{
+			cerr << "	-> getting child #" << child << std::endl;
+			this->getChild(m_joints[0]->children[child]);
+
+			cerr << "EXITING branch of root child #" << child << std::endl;
+			Matrix4f top_transformation = m_matrixStack.top();
+			top_transformation.print();
+
+			glLoadMatrixf(top_transformation);
+
+			GLUquadricObj *sphere;
+			sphere = gluNewQuadric();
+			gluQuadricDrawStyle(sphere, GLU_FILL );
+			gluSphere( sphere, 0.025f, 12, 12 );
+
+			// m_matrixStack.pop();
+
+		}
+	}
 }
 
 void SkeletalModel::drawSkeleton( )

@@ -80,7 +80,6 @@ private:
 	std::vector< Joint* > m_joints;
 
 	Mesh m_mesh;
-
 	MatrixStack m_matrixStack;
 };
 

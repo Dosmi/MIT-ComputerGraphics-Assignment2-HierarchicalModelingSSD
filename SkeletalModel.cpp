@@ -91,7 +91,7 @@ void SkeletalModel::loadSkeleton( const char* filename )
 
 }
 
-void SkeletalModel::getChild( Joint* joint )
+void SkeletalModel::getChild( Joint* joint, float boneLength )
 {
 	// recursion ending condition:
 	if (joint->children.size() == 0)
@@ -113,7 +113,43 @@ void SkeletalModel::getChild( Joint* joint )
 		sphere = gluNewQuadric();
 		gluQuadricDrawStyle(sphere, GLU_FILL );
 		gluSphere( sphere, 0.025f, 12, 12 );
+		// glutSolidCube( 1.0f );
 
+		// Purple side - RIGHT
+		// glBegin(GL_POLYGON);
+		// glColor3f(  1.0,  0.0,  1.0 );
+		// glVertex3f( 0.05, -0.05, -0.05 );
+		// glVertex3f( 0.05,  0.05, -0.05 );
+		// glVertex3f( 0.05,  0.05,  0.05 );
+		// glVertex3f( 0.05, -0.05,  0.05 );
+		// glEnd();
+
+		// // Green side - LEFT
+		// glBegin(GL_POLYGON);
+		// glColor3f(   0.0,  1.0,  0.0 );
+		// glVertex3f( -0.05, -0.05,  0.05 );
+		// glVertex3f( -0.05,  0.05,  0.05 );
+		// glVertex3f( -0.05,  0.05, -0.05 );
+		// glVertex3f( -0.05, -0.05, -0.05 );
+		// glEnd();
+
+		// Blue side - TOP
+		glBegin(GL_POLYGON);
+		glColor3f(   0.0f,  0.0f,  1.0f );
+		glVertex3f(  boneLength,  boneLength,  boneLength );
+		glVertex3f(  boneLength,  boneLength, -boneLength );
+		glVertex3f( -boneLength,  boneLength, -boneLength );
+		glVertex3f( -boneLength,  boneLength,  boneLength );
+		glEnd();
+
+		// Red side - BOTTOM
+		glBegin(GL_POLYGON);
+		glColor3f(   1.0,  0.0,  0.0 );
+		glVertex3f(  0.05, 0.0, -0.05 );
+		glVertex3f(  0.05, 0.0,  0.05 );
+		glVertex3f( -0.05, 0.0,  0.05 );
+		glVertex3f( -0.05, 0.0, -0.05 );
+		glEnd();
 		// glutSolidSphere( 0.025f, 12, 12 );
 		// m_matrixStack.pop();
 		// left here on 2019-12-01, ... continuing on 2019-12-18
@@ -125,11 +161,30 @@ void SkeletalModel::getChild( Joint* joint )
 		// m_matrixStack.push(joint->transform);
 		// Matrix4f top_transformation = m_matrixStack.top();
 		// top_transformation.print();
+
+		Matrix4f previousJoint = m_matrixStack.top();
+		Matrix4f currentJoint = previousJoint * (joint->transform);
+
 		m_matrixStack.push(joint->transform);
 
 		for(int child = 0; child < joint->children.size(); child++ )
 		{
-			this->getChild(joint->children[child]);
+			// float x1 = joint->transform(0,3), x2 = joint->children[child]->transform(0,3);
+			// float y1 = joint->transform(1,3), y2 = joint->children[child]->transform(1,3);
+			// float z1 = joint->transform(2,3), z2 = joint->children[child]->transform(2,3);
+			int scaling = 1;
+			float x1 = currentJoint(0,3)/scaling, x2 = previousJoint(0,3)/scaling;
+			float y1 = currentJoint(1,3)/scaling, y2 = previousJoint(1,3)/scaling;
+			float z1 = currentJoint(2,3)/scaling, z2 = previousJoint(2,3)/scaling;
+
+			cerr << x1 << ", " << y1 << ", " << z1 << std::endl;
+			cerr << x2 << ", " << y2 << ", " << z2 << std::endl;
+
+			long double boneLength = sqrt(pow(x1-x2,2.0)+pow(y1-y2,2.0)+pow(z1-z2,2.0));
+
+			cerr << "length of bone: " << boneLength << endl;
+
+			this->getChild(joint->children[child], boneLength);
 			cerr << "EXITING RECURSION . . . popping and drawing index: " << joint->index << std::endl;
 
 			Matrix4f top_transformation = m_matrixStack.top();
@@ -178,7 +233,7 @@ void SkeletalModel::drawJoints( )
 		// if (child != 0)
 		{
 			cerr << "	-> getting child #" << child << std::endl;
-			this->getChild(m_joints[0]->children[child]);
+			this->getChild(m_joints[0]->children[child], 0.0);
 
 			cerr << "EXITING branch of root child #" << child << std::endl;
 			Matrix4f top_transformation = m_matrixStack.top();

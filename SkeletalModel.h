@@ -43,7 +43,7 @@ public:
 	void loadSkeleton( const char* filename );
 
 	// 1.1. Implement this method with a recursive helper to draw a sphere at each joint.
-	void getChild( Joint* joint );
+	void getChild( Joint* joint, float boneLength );
 	void drawJoints( );
 
 	// 1.2. Implement this method a recursive helper to draw a box between each pair of joints

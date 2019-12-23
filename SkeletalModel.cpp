@@ -1,5 +1,6 @@
 #include "SkeletalModel.h"
 
+#include <cmath>
 #include <FL/Fl.H>
 #include <fstream> // header providing file stream classes
 
@@ -88,11 +89,11 @@ void SkeletalModel::loadSkeleton( const char* filename )
 		cerr << endl;
 	}
 
-
 }
 
-void SkeletalModel::getChild( Joint* joint, float boneLength )
+void SkeletalModel::getChild( Joint* joint, float boneLength, float boneSkew)
 {
+	float boneWidth = 0.015, boneThickness = 0.015;
 	// recursion ending condition:
 	if (joint->children.size() == 0)
 	{
@@ -100,12 +101,14 @@ void SkeletalModel::getChild( Joint* joint, float boneLength )
 		// ... then simply draw it
 		cerr << "Drawing joint index: " << joint->index << " ";
 
+		Matrix4f previousMatrix = m_matrixStack.top();
 		m_matrixStack.push(joint->transform);
 
 		Matrix4f top_transformation = m_matrixStack.top();
 		top_transformation.print();
 		// float m[16] = {1,0,0,0,0,1,0,0,0,0,1,0,1,2,3,1};
 		glLoadMatrixf(top_transformation);
+
 		// glGetFloatv (GL_MODELVIEW_MATRIX, check_mat);
 
 		// GLUQuadric *sphere;
@@ -115,44 +118,100 @@ void SkeletalModel::getChild( Joint* joint, float boneLength )
 		gluSphere( sphere, 0.025f, 12, 12 );
 		// glutSolidCube( 1.0f );
 
+		// get the two joint points:
+		Vector3f childPoint(top_transformation(0,3), top_transformation(1,3), top_transformation(2,3));
+		Vector3f parentPoint(previousMatrix(0,3), previousMatrix(1,3), previousMatrix(2,3));
+
+		float abs_product = childPoint.abs() * parentPoint.abs();
+		float dot_product = Vector3f::dot(childPoint, parentPoint);
+
+		float angle = acos(dot_product / abs_product);
+
+		cerr << "calculations: " << abs_product << " " << dot_product << endl;
+		cerr << "angle: " << angle;
+
+		// m_matrixStack.push(top_transformation.rotateZ(-0.235398));
+		m_matrixStack.push(top_transformation.rotateZ(0));
+		m_matrixStack.push(top_transformation.rotateX(angle));
+		Matrix4f top_rotated_transformation = m_matrixStack.top();
+
+		glLoadMatrixf(top_rotated_transformation);
+
+		// --------------------------- Drawing Bones ---------------------------- //
+		{
+        glDisable(GL_LIGHTING);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+        glColor4f(0.4f,0.4f,0.4f,1.f);
+        glLineWidth(1);
+    }
+
 		// Purple side - RIGHT
-		// glBegin(GL_POLYGON);
-		// glColor3f(  1.0,  0.0,  1.0 );
-		// glVertex3f( 0.05, -0.05, -0.05 );
-		// glVertex3f( 0.05,  0.05, -0.05 );
-		// glVertex3f( 0.05,  0.05,  0.05 );
-		// glVertex3f( 0.05, -0.05,  0.05 );
-		// glEnd();
+		glBegin(GL_POLYGON);
+		glColor3f(  1.0,  0.0,  1.0 );
+		// 					x (red)   y (green)   z (blue)
+		glVertex3f( boneWidth, 		 0,  						-boneThickness );
+		glVertex3f( boneWidth, 		 boneLength,  	-boneThickness );
+		glVertex3f( boneWidth, 		 boneLength, 		 boneThickness );
+		glVertex3f( boneWidth,		 0, 						 boneThickness );
+		glEnd();
+		// glLoadMatrixf(top_transformation);
 
 		// // Green side - LEFT
-		// glBegin(GL_POLYGON);
-		// glColor3f(   0.0,  1.0,  0.0 );
-		// glVertex3f( -0.05, -0.05,  0.05 );
-		// glVertex3f( -0.05,  0.05,  0.05 );
-		// glVertex3f( -0.05,  0.05, -0.05 );
-		// glVertex3f( -0.05, -0.05, -0.05 );
-		// glEnd();
+		glBegin(GL_POLYGON);
+		glColor3f(   0.0,  1.0,  0.0 );
+		// 					x (red)   y (green)   z (blue)
+		glVertex3f( -boneWidth, 		 0,  	boneThickness );
+		glVertex3f( -boneWidth, 		 boneLength,  	boneThickness );
+		glVertex3f( -boneWidth, 		 boneLength, 		-boneThickness );
+		glVertex3f( -boneWidth,		 0, 		-boneThickness );
+		glEnd();
 
 		// Blue side - TOP
 		glBegin(GL_POLYGON);
 		glColor3f(   0.0f,  0.0f,  1.0f );
-		glVertex3f(  boneLength,  boneLength,  boneLength );
-		glVertex3f(  boneLength,  boneLength, -boneLength );
-		glVertex3f( -boneLength,  boneLength, -boneLength );
-		glVertex3f( -boneLength,  boneLength,  boneLength );
+		glVertex3f(  boneWidth,  boneLength,  boneThickness );
+		glVertex3f(  boneWidth,  boneLength, -boneThickness );
+		glVertex3f( -boneWidth,  boneLength, -boneThickness );
+		glVertex3f( -boneWidth,  boneLength,  boneThickness );
 		glEnd();
 
 		// Red side - BOTTOM
 		glBegin(GL_POLYGON);
 		glColor3f(   1.0,  0.0,  0.0 );
-		glVertex3f(  0.05, 0.0, -0.05 );
-		glVertex3f(  0.05, 0.0,  0.05 );
-		glVertex3f( -0.05, 0.0,  0.05 );
-		glVertex3f( -0.05, 0.0, -0.05 );
+		glVertex3f(  boneWidth, 0.0, -boneThickness );
+		glVertex3f(  boneWidth, 0.0,  boneThickness );
+		glVertex3f( -boneWidth, 0.0,  boneThickness );
+		glVertex3f( -boneWidth, 0.0, -boneThickness);
+		glEnd();
+
+		// FRONT - yellow
+		glBegin(GL_POLYGON);
+		glColor3f(   1.0,  1.0,  0.0 );
+		glVertex3f(  boneWidth, 0.0, 				-boneThickness );
+		glVertex3f(  boneWidth, boneLength, -boneThickness );
+		glVertex3f( -boneWidth, boneLength, -boneThickness );
+		glVertex3f( -boneWidth, 0.0, 				-boneThickness);
+		glEnd();
+
+		// BACK - white
+		glBegin(GL_POLYGON);
+		glColor3f(   1.0,  1.0,  1.0 );
+		glLineWidth(2);
+		//                      height,
+		glVertex3f( -boneWidth, 0.0, 				 boneThickness );
+		glVertex3f( -boneWidth, boneLength,  boneThickness );
+		glVertex3f(  boneWidth, boneLength,  boneThickness );
+		glVertex3f(  boneWidth, 0.0, 				 boneThickness);
 		glEnd();
 		// glutSolidSphere( 0.025f, 12, 12 );
 		// m_matrixStack.pop();
 		// left here on 2019-12-01, ... continuing on 2019-12-18
+
+		// clean up the stack matrix:
+		m_matrixStack.pop();
+		m_matrixStack.pop();
+
 	}
 	else
 	{
@@ -161,7 +220,8 @@ void SkeletalModel::getChild( Joint* joint, float boneLength )
 		// m_matrixStack.push(joint->transform);
 		// Matrix4f top_transformation = m_matrixStack.top();
 		// top_transformation.print();
-
+		float skew_x1 = joint->transform(3,0);
+		float skew_x2 = joint->transform(3,0);
 		Matrix4f previousJoint = m_matrixStack.top();
 		Matrix4f currentJoint = previousJoint * (joint->transform);
 
@@ -181,10 +241,11 @@ void SkeletalModel::getChild( Joint* joint, float boneLength )
 			cerr << x2 << ", " << y2 << ", " << z2 << std::endl;
 
 			long double boneLength = sqrt(pow(x1-x2,2.0)+pow(y1-y2,2.0)+pow(z1-z2,2.0));
+			float boneSkew = sqrt(pow(x1-x2,2.0));
 
 			cerr << "length of bone: " << boneLength << endl;
 
-			this->getChild(joint->children[child], boneLength);
+			this->getChild(joint->children[child], boneLength, boneSkew );
 			cerr << "EXITING RECURSION . . . popping and drawing index: " << joint->index << std::endl;
 
 			Matrix4f top_transformation = m_matrixStack.top();
@@ -233,7 +294,7 @@ void SkeletalModel::drawJoints( )
 		// if (child != 0)
 		{
 			cerr << "	-> getting child #" << child << std::endl;
-			this->getChild(m_joints[0]->children[child], 0.0);
+			this->getChild(m_joints[0]->children[child], 0.0, 0.0);
 
 			cerr << "EXITING branch of root child #" << child << std::endl;
 			Matrix4f top_transformation = m_matrixStack.top();

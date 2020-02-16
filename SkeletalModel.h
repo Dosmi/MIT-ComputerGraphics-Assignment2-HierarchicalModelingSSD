@@ -43,7 +43,8 @@ public:
 	void loadSkeleton( const char* filename );
 
 	// 1.1. Implement this method with a recursive helper to draw a sphere at each joint.
-	void getChild( Joint* joint, float boneLength, float boneSkew );
+	void drawBone( Joint* joint, float boneLength, Joint* parent, Matrix4f top_transformation);
+	void getChild( Joint* joint, float boneLength, Joint* parent);
 	void drawJoints( );
 
 	// 1.2. Implement this method a recursive helper to draw a box between each pair of joints
@@ -52,7 +53,11 @@ public:
 	// 1.3. Implement this method to handle changes to your skeleton given
 	// changes in the slider values
 	void setJointTransform( int jointIndex, float rX, float rY, float rZ );
-
+		// utility functions used in setJointTransform:
+		Matrix4f rotateJointXaxis(Joint* joint, float radians);
+		Matrix4f rotateJointYaxis(Joint* joint, float radians);
+		Matrix4f rotateJointZaxis(Joint* joint, float radians);
+		void rotateAllAxes(Joint* joint, float angleX, float angleY, float angleZ, const char order[]);
 	// Part 2: Skeletal Subspace Deformation
 
 	// 2.3. Implement SSD
@@ -60,17 +65,19 @@ public:
 	// 2.3.1. Implement this method to compute a per-joint transform from
 	// world-space to joint space in the BIND POSE.
 	void computeBindWorldToJointTransforms();
+		void computeBindWorldToJointtransform_for_joint(Joint* joint, Matrix4f transform);
 
 	// 2.3.2. Implement this method to compute a per-joint transform from
 	// joint space to world space in the CURRENT POSE.
 	void updateCurrentJointToWorldTransforms();
-
+		void updateWorldTransform_for_joint(Joint* joint, Matrix4f transform);
 	// 2.3.2. This is the core of SSD.
 	// Implement this method to update the vertices of the mesh
 	// given the current state of the skeleton.
 	// You will need both the bind pose world --> joint transforms.
 	// and the current joint --> world transforms.
 	void updateMesh();
+		Vector3f computeVertexNewPosition(Vector3f* vertex, Joint* joint, float weight);
 
 private:
 

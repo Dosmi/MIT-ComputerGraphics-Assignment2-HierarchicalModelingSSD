@@ -25,8 +25,8 @@ if (filename)
 //	m_modelerView->draw();
 	m_modelerView->make_current();
 m_modelerView->draw();
-	
-		
+
+
 	unsigned char *imageBuffer = new unsigned char[3*w*h];
 
         // Tell openGL to read from the front buffer when capturing
@@ -35,9 +35,9 @@ m_modelerView->draw();
 
         glPixelStorei( GL_PACK_ALIGNMENT, 1 );
         glPixelStorei( GL_PACK_ROW_LENGTH, w );
-        
-        glReadPixels( 0, 0, w, h, 
-                GL_RGB, GL_UNSIGNED_BYTE, 
+
+        glReadPixels( 0, 0, w, h,
+                GL_RGB, GL_UNSIGNED_BYTE,
                 imageBuffer );
 
 
@@ -61,15 +61,15 @@ inline void ModelerUserInterface::cb_Open_i(Fl_Menu_*, void*) {
 			std::cerr << "Error: couldn't read position file " << filename << std::endl;
 			return;
 		}
-		
-		int controlNum; 
+
+		int controlNum;
 		float value;
 		while( ifs >> controlNum >> value )
 		{
 			if( controlNum >= ModelerApplication::Instance()->GetNumControls() ) {
 				break;
 			}
-			
+
 			ModelerApplication::Instance()->SetControlValue(controlNum, value);
 		}
 
@@ -154,24 +154,26 @@ void ModelerUserInterface::cb_m_modelerWindow(Fl_Double_Window* o, void* v) {
 }
 
 ModelerUserInterface::ModelerUserInterface() {
-  Fl_Double_Window* w;
-  { Fl_Double_Window* o = m_controlsWindow = new Fl_Double_Window(395, 325, "Assignment 2 Controls");
+Fl_Double_Window* w;                                                // 325
+  { Fl_Double_Window* o = m_controlsWindow = new Fl_Double_Window(395, 625, "Assignment 2 Controls");
     w = o;
     o->callback((Fl_Callback*)cb_m_controlsWindow, (void*)(this));
     o->when(FL_WHEN_NEVER);
     { Fl_Menu_Bar* o = m_controlsMenuBar = new Fl_Menu_Bar(0, 0, 395, 25);
       o->menu(menu_m_controlsMenuBar);
     }
-    { Fl_Browser* o = m_controlsBrowser = new Fl_Browser(0, 25, 140, 300, "Controls");
+    { Fl_Browser* o = m_controlsBrowser = new Fl_Browser(0, 25, 140, 600, "Controls");
       o->type(3);
       o->textsize(10);
       o->callback((Fl_Callback*)cb_m_controlsBrowser);
       Fl_Group::current()->resizable(o);
     }
-    { Fl_Scroll* o = m_controlsScroll = new Fl_Scroll(145, 25, 250, 300);
+    { Fl_Scroll* o = m_controlsScroll = new Fl_Scroll(145, 25, 250, 600);
       o->type(6);
       o->when(FL_WHEN_CHANGED);
-      { Fl_Pack* o = m_controlsPack = new Fl_Pack(145, 25, 225, 300);
+                                                // slider width
+      // { Fl_Pack* o = m_controlsPack = new Fl_Pack(145, 25, 220, 300);
+      { Fl_Pack* o = m_controlsPack = new Fl_Pack(145, 25, 100, 600);
         o->end();
       }
       o->end();
@@ -200,6 +202,6 @@ ModelerUserInterface::ModelerUserInterface() {
 
 void ModelerUserInterface::show() {
   m_controlsWindow->show();
-m_modelerWindow->show();
-m_modelerView->show();
+  m_modelerWindow->show();
+  m_modelerView->show();
 }

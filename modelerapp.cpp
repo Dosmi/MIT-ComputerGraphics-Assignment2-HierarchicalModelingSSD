@@ -82,8 +82,8 @@ void ModelerApplication::Init( int argc, char* argv[],
     m_controlValueSliders = new Fl_Value_Slider *[numControls];
 
     // Constants for user interface setup
-    const int textHeight = 20;
-    const int sliderHeight = 20;
+    const int textHeight = 10;
+    const int sliderHeight = m_ui->m_controlsPack->h()-25;
     const int packWidth = m_ui->m_controlsPack->w();
 
     m_ui->m_controlsPack->begin();
@@ -103,9 +103,10 @@ void ModelerApplication::Init( int argc, char* argv[],
 	// Add the slider (but make it invisible for now)
 	Fl_Value_Slider *slider =
 	    new Fl_Value_Slider(0, 0, packWidth, sliderHeight, 0);
-	slider->type(1);
+	slider->type(8);
 	slider->range(controls[i].m_minimum, controls[i].m_maximum);
 	slider->step(controls[i].m_stepsize);
+	// slider->value(controls[i].m_value * 100000.0);
 	slider->value(controls[i].m_value);
 	slider->hide();
 	m_controlValueSliders[i] = slider;
@@ -115,7 +116,7 @@ void ModelerApplication::Init( int argc, char* argv[],
     m_ui->m_controlsPack->end();
 
     // Make sure that we remove the view from the
-    // Fl_Group, otherwise, it'll blow up 
+    // Fl_Group, otherwise, it'll blow up
     // THIS BUG FIXED 04-18-01 ehsu
     m_ui->m_modelerWindow->remove(*(m_ui->m_modelerView));
     delete m_ui->m_modelerView;
@@ -144,7 +145,7 @@ int ModelerApplication::Run()
 		"ERROR: ModelerApplication must be initialized before Run()!\n");
 	return -1;
     }
-    
+
     // Just tell FLTK to go for it.
     Fl::visual(FL_RGB | FL_DOUBLE);
     m_ui->show();

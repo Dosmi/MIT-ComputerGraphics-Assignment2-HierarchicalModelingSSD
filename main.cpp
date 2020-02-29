@@ -4,6 +4,9 @@
 
 #include <cmath>
 #include <iostream>
+
+#include <ostream>
+
 #include <cstdlib>
 #include <fstream>
 #include <vector>
@@ -14,6 +17,7 @@
 #include <GL/glut.h>
 #endif
 #include <vecmath.h>
+#include <streambuf>
 
 #include "modelerapp.h"
 #include "ModelerView.h"
